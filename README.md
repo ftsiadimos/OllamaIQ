@@ -44,15 +44,17 @@ A small Python app that queries an Ollama server, finds models (defaults to thos
 ## 🚀 Quickstart — Docker (recommended)
 Run the official image exposing the default app port (9912):
 
+#### Pull and run in one command
+
 ```bash
-# Pull and run in one command
 docker run -d \
   --name ollamaiq \
   -p 9912:9912 \
   ftsiadimos/ollamaiq
-
-# Open http://localhost:9912
 ```
+
+Open http://localhost:9912
+
 
 Or with Docker Compose (example):
 
