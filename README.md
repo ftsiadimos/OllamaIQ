@@ -1,6 +1,6 @@
 # 🧠 Ollama IQ Model Tester ✅
 
-A small Python app that queries an Ollama server, finds models (defaults to those containing `etch`), measures per-prompt latency, and runs lightweight "smartness" and code-skill checks. It provides a CLI and a modern, cozy Flask web UI with persistent run history and downloadable JSON results.
+Ollama - Benchmark your local LLM models, finds models, measures per-prompt latency, and runs lightweight "smartness" and code-skill checks.
 
 ---
 
