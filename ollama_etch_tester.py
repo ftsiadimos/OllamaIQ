@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-only
 """Comprehensive Ollama Model Tester - Evaluates model intelligence and coding ability.
 
 This module tests LLM models on:

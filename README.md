@@ -1,6 +1,26 @@
-# 🧠 Ollama IQ Model Tester ✅
+<p align="center">
+  <img src="mis/ollamaIQmain.png" width="120" alt="OllamaIQ Logo">
+</p>
 
-Ollama - Benchmark your local LLM models, finds models, measures per-prompt latency, and runs lightweight "smartness" and code-skill checks.
+
+
+<h1 align="center">Ollama Benchmark</h1>
+
+<p align="center">
+  <strong>Ollama - Benchmark your local LLM models, finds models, measures per-prompt latency, and runs lightweight "smartness" and code-skill checks. <strong><br>
+  Practical and easy to manage.
+</p>
+
+
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="Python 3.9+">
+  <img src="https://img.shields.io/badge/flask-2.x-green.svg" alt="Flask 2.x">
+  <img src="https://img.shields.io/badge/vue.js-3.x-brightgreen.svg" alt="Vue.js 3">
+  <img src="https://img.shields.io/badge/license-GPL--3.0-orange.svg" alt="License GPL-3.0">
+  <img src="https://img.shields.io/badge/SPDX-GPL--3.0--only-blue.svg" alt="SPDX GPL-3.0-only">
+  <a href="https://hub.docker.com/r/ftsiadimos/ollamaiq"><img src="https://img.shields.io/docker/pulls/ftsiadimos/ollamaiq?style=flat-square&logo=docker" alt="Docker Pulls"></a>
+</p>
+
 
 ---
 
@@ -137,4 +157,5 @@ Contributions are welcome! Please open an issue or pull request. If you add test
 ---
 
 ## 📄 License
-MIT — see the repository LICENSE file for details.
+GPL-3.0 — see the repository LICENSE file for details.  
+SPDX: `GPL-3.0-only`

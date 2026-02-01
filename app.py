@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-only
 from flask import Flask, render_template, request, jsonify, send_file, abort
 import threading
 import os
