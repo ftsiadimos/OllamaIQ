@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ollama IQ Test</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="brand">
+        <span class="logo" aria-hidden="true"></span>
+        <div>
+          <div class="title">Ollama IQ Test</div>
+          <div class="subtitle">Benchmark your local LLM models</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="/history" class="badge">📊 History</a>
+        <a href="/about" class="badge badge-info">ℹ️ About</a>
+        <label class="theme-selector">
+          <select id="themeSelect" aria-label="Theme selector">
+            <option value="light">☀️ Light</option>
+            <option value="dark">🌙 Dark</option>
+            <option value="warm-dark">🔥 Warm Dark</option>
+          </select>
+        </label>
+      </div>
+    </header>
+
+    <script>
+      (function(){
+        const sel = document.getElementById('themeSelect');
+        const setTheme = (name) => {
+          document.documentElement.setAttribute('data-theme', name);
+          localStorage.setItem('theme', name);
+        };
+        const saved = localStorage.getItem('theme') || 'light';
+        setTheme(saved);
+        if (sel) {
+          sel.value = saved;
+          sel.addEventListener('change', function(e){ setTheme(e.target.value); });
+        }
+      })();
+    </script>
+
+    <div class="grid">
+      <section class="panel controls">
+        <div class="panel-header">
+          <h3>Connection</h3>
+          <span class="panel-hint">Choose a host and fetch models</span>
+        </div>
+        <form id="fetchForm" action="/fetch" method="post" class="stack">
+          <label>
+            Saved hosts
+            <select name="host" id="hostSelect">
+              {% set host_list = saved_hosts %}
+              {% for h in host_list %}
+                <option value="{{ h }}">{{ h }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label>
+            Or enter new host
+            <input type="text" name="host_new" value="" placeholder="http://localhost:11434" autocomplete="url">
+          </label>
+          <label>
+            API key (optional)
+            <input type="password" name="api_key" autocomplete="current-password" placeholder="sk-...">
+          </label>
+          <label>
+            Repeat per prompt
+            <input type="number" name="repeat" value="1" min="1" step="1">
+          </label>
+          <div class="form-actions">
+            <button type="submit">Fetch models</button>
+            <button type="button" class="secondary" onclick="document.getElementById('hostSelect').value='http://localhost:11434'">Reset</button>
+          </div>
+        </form>
+
+        <div id="models-container" class="stack-lg">
+          <!-- models checkbox block (rendered when available) -->
+          {% if results and results.available_models and (rows is not defined or rows|length == 0) %}
+            {% import '_models_block.html' as mb %}
+            {{ mb.models_block(results.available_models, results.host) }}
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="panel results-panel">
+        <div class="panel-header">
+          <h3>Live Progress</h3>
+          <span class="panel-hint">Run logs and charts render here</span>
+        </div>
+        <div id="progress-area"></div>
+        <div id="results-area"></div>
+      </section>
+    </div>
+
+  {% if results %}
+    {% if results.error %}
+      <div class="alert-error">
+        <strong>Error connecting to Ollama:</strong>
+        <div>{{ results.error }}</div>
+        <p><strong>Troubleshooting steps:</strong></p>
+        <ol>
+          <li>Ensure Ollama is installed: <code>which ollama</code> or see <a href="https://ollama.com/download">https://ollama.com/download</a></li>
+          <li>If installed, start a model (which will start the local service): e.g. <code>ollama pull gemma3</code> then <code>ollama run gemma3</code></li>
+          <li>Check the server is listening: <code>curl -v {{ results.host }}</code> or <code>ss -ltnp | grep 11434</code></li>
+          <li>If using a remote host, verify the host URL and any API key are correct and reachable</li>
+        </ol>
+      </div>
+    {% elif rows|length == 0 %}
+      <!-- No models tested; model list is shown in the left panel. -->
+    {% else %}
+      <div class="summary summary-cards">
+        {% if fastest %}
+          <div class="summary-card">
+            <div class="small">Fastest</div>
+            <div class="summary-title">{{ fastest.model }}</div>
+            <div class="small">mean {{ fastest.mean }}s</div>
+          </div>
+        {% endif %}
+        {% if best_code %}
+          <div class="summary-card">
+            <div class="small">Best code</div>
+            <div class="summary-title">{{ best_code.model }}</div>
+            <div class="small">{{ best_code.code }}%</div>
+          </div>
+        {% endif %}
+        {% if best_smart %}
+          <div class="summary-card">
+            <div class="small">Best smartness</div>
+            <div class="summary-title">{{ best_smart.model }}</div>
+            <div class="small">{{ best_smart.smartness }}%</div>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="table-responsive">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th class="numeric">Smartness</th>
+              <th class="numeric">Code</th>
+              <th class="numeric">Mean</th>
+              <th class="numeric">Median</th>
+              <th class="numeric">Min</th>
+              <th class="numeric">Max</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+        {% for r in rows %}
+          <tr>
+            <td>{{ r.model }}</td>
+            <td>{{ r.smartness }}</td>
+            <td>{{ r.code }}</td>
+            <td>{{ r.mean }}</td>
+            <td>{{ r.median }}</td>
+            <td>{{ r.min }}</td>
+            <td>{{ r.max }}</td>
+            <td><details><summary>show</summary>
+              <pre>{% for t in r.tests %}{% for p in t.passes %}{{ t.name }}: latency={{ "%.4f"|format(p.latency_s) }}s
+{{ p.response | e }}
+
+{% endfor %}{% endfor %}</pre>
+            </details></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    {% endif %}
+  {% endif %}
+
+    <footer class="footer">
+      <div class="footer-content">
+        <p>Fotios Tsiadimos</p>
+        <p><a href="https://github.com/ftsiadimos/ollamaiq" target="_blank" rel="noopener noreferrer">View on GitHub</a></p>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

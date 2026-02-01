@@ -1,0 +1,250 @@
+{% macro models_block(available_models, host='') %}
+  <div>
+    <form id="runForm" action="#" method="post" class="stack">
+      <input type="hidden" name="host" value="{{ host }}">
+      <input type="hidden" name="api_key" value="">
+      <input type="hidden" name="repeat" value="1">
+
+      <div class="models-header">
+        <div>
+          <h4>Models</h4>
+          <div class="small">Select which models to benchmark</div>
+        </div>
+        <div class="models-count" id="modelsCount">{{ available_models|length }} total</div>
+      </div>
+
+      <label>
+        Search models
+        <input id="modelSearch" type="text" placeholder="Filter by name" autocomplete="off">
+      </label>
+
+      <div class="models-actions">
+        <label class="checkbox-inline"><input id="select_all" type="checkbox"> Select all</label>
+        <button type="button" class="secondary" id="clearSelection">Clear</button>
+        <div class="small" id="selectedCount">0 selected</div>
+      </div>
+
+      <div class="models-list" id="modelsList">
+        {% for m in available_models %}
+          <div class="model-item" data-model="{{ m | lower }}">
+            <label><input type="checkbox" class="model-checkbox" name="selected_models" value="{{ m }}"> {{ m }}</label>
+          </div>
+        {% endfor %}
+      </div>
+
+      <button id="startRunBtn" type="submit">Run tests on selected models</button>
+    </form>
+  </div>
+
+  <script>
+    (function(){
+      var selectAll = document.getElementById('select_all');
+      var clearSelection = document.getElementById('clearSelection');
+      var searchInput = document.getElementById('modelSearch');
+      var selectedCount = document.getElementById('selectedCount');
+
+      function updateSelectedCount(){
+        var count = document.querySelectorAll('.model-checkbox:checked').length;
+        if (selectedCount) selectedCount.textContent = count + ' selected';
+      }
+
+      if (selectAll) {
+        selectAll.addEventListener('change', function(e){
+          var checked = e.target.checked;
+          document.querySelectorAll('.model-checkbox').forEach(function(cb){ cb.checked = checked; });
+          updateSelectedCount();
+        });
+      }
+
+      if (clearSelection) {
+        clearSelection.addEventListener('click', function(){
+          document.querySelectorAll('.model-checkbox').forEach(function(cb){ cb.checked = false; });
+          if (selectAll) selectAll.checked = false;
+          updateSelectedCount();
+        });
+      }
+
+      if (searchInput) {
+        searchInput.addEventListener('input', function(e){
+          var q = (e.target.value || '').toLowerCase();
+          document.querySelectorAll('#modelsList .model-item').forEach(function(row){
+            var name = row.getAttribute('data-model') || '';
+            row.style.display = name.indexOf(q) !== -1 ? '' : 'none';
+          });
+        });
+      }
+
+      document.querySelectorAll('.model-checkbox').forEach(function(cb){
+        cb.addEventListener('change', updateSelectedCount);
+      });
+      updateSelectedCount();
+
+      var runForm = document.getElementById('runForm');
+      if (!runForm) return;
+
+      runForm.addEventListener('submit', function(e){
+        e.preventDefault();
+        var host = runForm.querySelector('input[name="host"]').value;
+        var api_key = runForm.querySelector('input[name="api_key"]').value || '';
+        var repeat = runForm.querySelector('input[name="repeat"]').value || 1;
+        var selected = Array.from(document.querySelectorAll('.model-checkbox')).filter(function(cb){ return cb.checked; }).map(function(cb){ return cb.value; });
+        if (selected.length === 0) {
+          alert('Select at least one model');
+          return;
+        }
+
+        // show progress in dedicated area
+        var progressArea = document.getElementById('progress-area');
+        if (progressArea) {
+          progressArea.innerHTML = '<div id="run-progress" class="summary-card"><h4>Run started...</h4><div id="run-log" class="log"></div><div class="progress"><div id="run-bar" class="progress-bar" style="width:0%"></div></div></div>';
+        } else {
+          var container = document.getElementById('run-progress') || document.createElement('div');
+          container.id = 'run-progress';
+          container.innerHTML = '<h4>Run started...</h4><div id="run-log" class="log"></div><div class="progress"><div id="run-bar" class="progress-bar" style="width:0%"></div></div>';
+          runForm.parentNode.insertBefore(container, runForm.nextSibling);
+        }
+
+        // clear previous results
+        var resultsArea = document.getElementById('results-area');
+        if (resultsArea) resultsArea.innerHTML = '';
+
+        fetch('/start_run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ host: host, api_key: api_key, repeat: repeat, models: selected })
+        }).then(function(r){ return r.json(); }).then(function(data){
+          if (data.error) {
+            var log = document.getElementById('run-log');
+            if (log) log.innerText = 'Error: ' + data.error;
+            return;
+          }
+          var runId = data.run_id;
+          pollRun(runId);
+        }).catch(function(err){
+          var log = document.getElementById('run-log');
+          if (log) log.innerText = 'Error starting run: ' + err;
+        });
+      });
+
+      function pollRun(runId) {
+        var progressArea = document.getElementById('progress-area');
+        var logEl = progressArea ? progressArea.querySelector('#run-log') : document.getElementById('run-log');
+        var bar = progressArea ? progressArea.querySelector('#run-bar') : document.getElementById('run-bar');
+        var timer = setInterval(function(){
+          fetch('/run_status/' + runId).then(function(r){ return r.json(); }).then(function(s){
+            if (s.error) {
+              if (logEl) logEl.innerText = 'Error: ' + s.error;
+              clearInterval(timer);
+              return;
+            }
+            // update messages
+            if (logEl) logEl.innerHTML = (s.messages || []).map(function(m){ return '<div>' + escapeHtml(m) + '</div>'; }).join('');
+            if (bar) bar.style.width = (s.progress || 0) + '%';
+            if (s.status === 'done') {
+              if (logEl) logEl.innerHTML += '<div><strong>Run complete — rendering results below.</strong></div>';
+              clearInterval(timer);
+              if (s.result) {
+                if (bar) bar.style.width = '100%';
+                renderResults(s.result);
+                // show charts
+                renderCharts(s.result);
+              }
+            }
+            if (s.status === 'error') {
+              if (logEl) logEl.innerHTML += '<div style="color:#fca5a5"><strong>Error:</strong> ' + escapeHtml((s.messages || []).slice(-1)[0] || 'unknown') + '</div>';
+              clearInterval(timer);
+            }
+          }).catch(function(e){
+            if (logEl) logEl.innerText = 'Error polling run: ' + e;
+            clearInterval(timer);
+          });
+        }, 1000);
+      }
+
+      function renderResults(summary) {
+        var container = document.getElementById('run-results') || document.createElement('div');
+        container.id = 'run-results';
+        var html = '<h3>Results</h3>';
+        if (!summary.models_tested || summary.models_tested.length === 0) {
+          html += '<p><em>No models tested.</em></p>';
+        } else {
+          // show top-summary if available
+          if (summary.top_summary) {
+            html += '<div class="summary-card" style="margin-bottom:8px;padding:8px">';
+            if (summary.top_summary.fastest) {
+              html += '<div><strong>Fastest:</strong> ' + escapeHtml(summary.top_summary.fastest.model) + ' (' + (summary.top_summary.fastest.mean || '') + 's)</div>';
+            }
+            if (summary.top_summary.best_code) {
+              var bc = summary.top_summary.best_code;
+              var bc_score = (bc.code_score === null || bc.code_score === undefined) ? 'N/A' : (bc.code_score + '%');
+              html += '<div><strong>Best code:</strong> ' + escapeHtml(bc.model) + ' (' + bc_score + ')</div>';
+            }
+            if (summary.top_summary.best_smart) {
+              html += '<div><strong>Best smartness:</strong> ' + escapeHtml(summary.top_summary.best_smart.model) + ' (' + (summary.top_summary.best_smart.smartness_score || '') + '%)</div>';
+            }
+            html += '</div>';
+          }
+
+          html += '<div class="table-responsive"><table class="results-table"><thead><tr><th>Model</th><th class="numeric">Smartness</th><th class="numeric">Code</th><th class="numeric">Mean</th><th class="numeric">Median</th><th class="numeric">Min</th><th class="numeric">Max</th></tr></thead><tbody>';
+          summary.models_tested.forEach(function(m){
+            var ls = m.latency_stats || {};
+            var smart = (m.smartness_score === null || m.smartness_score === undefined) ? 'N/A' : (m.smartness_score + '%');
+            var code = (m.code_score === null || m.code_score === undefined) ? 'N/A' : (m.code_score + '%');
+            html += '<tr>' +
+                    '<td>' + escapeHtml(m.model) + '</td>' +
+                    '<td>' + smart + '</td>' +
+                    '<td>' + code + '</td>' +
+                    '<td>' + (ls.mean || '') + '</td>' +
+                    '<td>' + (ls.median || '') + '</td>' +
+                    '<td>' + (ls.min || '') + '</td>' +
+                    '<td>' + (ls.max || '') + '</td>' +
+                    '</tr>';
+          });
+          html += '</tbody></table></div>';
+        }
+        // place results into the results area
+        var resultsArea = document.getElementById('results-area');
+        if (resultsArea) {
+          resultsArea.innerHTML = html;
+          // attach canvases for charts
+          resultsArea.insertAdjacentHTML('beforeend', '<div class="chart-grid"><canvas id="latencyChart"></canvas><canvas id="radarChart"></canvas></div>');
+        } else {
+          container.innerHTML = html;
+          container.insertAdjacentHTML('beforeend', '<div class="chart-grid"><canvas id="latencyChart"></canvas><canvas id="radarChart"></canvas></div>');
+          var progressEl = document.getElementById('run-progress');
+          if (progressEl && progressEl.parentNode) {
+            progressEl.parentNode.insertBefore(container, progressEl.nextSibling);
+          } else {
+            runForm.parentNode.insertBefore(container, runForm.nextSibling);
+          }
+        }
+      }
+
+      function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+      function renderCharts(summary){
+        // latency bar chart (mean per model)
+        var models = (summary.models_tested||[]).map(function(m){ return m.model; });
+        var means = (summary.models_tested||[]).map(function(m){ return (m.latency_stats||{}).mean || 0; });
+        var ctx = document.getElementById('latencyChart');
+        if (ctx && models.length) {
+          try{ new Chart(ctx.getContext('2d'), {type:'bar', data:{labels:models, datasets:[{label:'Mean latency (s)',data:means,backgroundColor:'rgba(124,58,237,0.6)'}]}, options:{responsive:true, maintainAspectRatio:false}}); }catch(e){console.warn(e)}
+        }
+        // radar chart for code vs smartness
+        var ctx2 = document.getElementById('radarChart');
+        if (ctx2 && models.length){
+          var data = {
+            labels: models,
+            datasets: [
+              {label:'Code %', data:(summary.models_tested||[]).map(function(m){ return (m.code_score === null || m.code_score === undefined) ? 0 : m.code_score }), backgroundColor:'rgba(6,182,212,0.15)', borderColor:'rgba(6,182,212,0.6)'},
+
+              {label:'Smartness %', data:(summary.models_tested||[]).map(m=>m.smartness_score||0), backgroundColor:'rgba(124,58,237,0.15)', borderColor:'rgba(124,58,237,0.9)'}
+            ]
+          };
+          try{ new Chart(ctx2.getContext('2d'), {type:'radar', data:data, options:{responsive:true, maintainAspectRatio:false}}); }catch(e){console.warn(e)}
+        }
+      }
+
+    })();
+  </script>
+{% endmacro %}

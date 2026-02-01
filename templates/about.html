@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>About - Ollama IQ Test</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="brand">
+        <span class="logo" aria-hidden="true"></span>
+        <div>
+          <div class="title">About</div>
+          <div class="subtitle">Learn how the IQ test works</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="/" class="badge">🏠 Home</a>
+        <a href="/history" class="badge">📊 History</a>
+        <label class="theme-selector">
+          <select id="themeSelect" aria-label="Theme selector">
+            <option value="light">☀️ Light</option>
+            <option value="dark">🌙 Dark</option>
+            <option value="warm-dark">🔥 Warm Dark</option>
+          </select>
+        </label>
+      </div>
+    </header>
+
+    <div class="about-content">
+      <section class="panel about-panel">
+        <div class="panel-header">
+          <h3>🧠 How the IQ Test Works</h3>
+        </div>
+        <div class="about-section">
+          <p>The Ollama IQ Test benchmarks your locally-running Ollama models across multiple dimensions to help you understand their capabilities and performance characteristics.</p>
+          
+          <h4>📊 Test Categories</h4>
+          <div class="test-categories">
+            <div class="category-card">
+              <div class="category-icon">💻</div>
+              <h5>Code Generation</h5>
+              <p>Tests the model's ability to generate correct, functional code snippets. Models are asked to solve programming challenges and their outputs are evaluated for correctness.</p>
+            </div>
+            <div class="category-card">
+              <div class="category-icon">🎯</div>
+              <h5>Smartness Score</h5>
+              <p>Measures logical reasoning, problem-solving ability, and general intelligence through a variety of cognitive tasks and puzzles.</p>
+            </div>
+            <div class="category-card">
+              <div class="category-icon">⚡</div>
+              <h5>Response Latency</h5>
+              <p>Tracks how fast each model responds, measuring mean, median, minimum, and maximum response times across all test prompts.</p>
+            </div>
+          </div>
+
+          <h4>🔬 Testing Process</h4>
+          <ol class="process-list">
+            <li><strong>Connection:</strong> Connect to your Ollama instance (local or remote) and fetch available models</li>
+            <li><strong>Selection:</strong> Choose which models you want to benchmark from the available list</li>
+            <li><strong>Execution:</strong> Each selected model runs through a standardized set of test prompts</li>
+            <li><strong>Evaluation:</strong> Responses are evaluated for correctness, quality, and timing</li>
+            <li><strong>Results:</strong> Comprehensive results show performance metrics and allow comparison between models</li>
+          </ol>
+
+          <h4>📈 Understanding Results</h4>
+          <ul class="results-explanation">
+            <li><strong>Smartness %:</strong> Overall intelligence score based on reasoning and problem-solving tests</li>
+            <li><strong>Code %:</strong> Accuracy of code generation tasks</li>
+            <li><strong>Mean/Median:</strong> Average and middle-point response times (lower is faster)</li>
+            <li><strong>Min/Max:</strong> Fastest and slowest individual responses</li>
+          </ul>
+
+          <h4>💡 Tips for Best Results</h4>
+          <ul class="tips-list">
+            <li>Ensure your Ollama instance is not under heavy load during testing</li>
+            <li>Use the "Repeat per prompt" setting to get more stable averages</li>
+            <li>Compare models of similar size for fair benchmarking</li>
+            <li>Check the History page to track performance over time</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="panel developer-panel">
+        <div class="panel-header">
+          <h3>👨‍💻 Developer</h3>
+        </div>
+        <div class="developer-info">
+          <div class="developer-card">
+            <div class="developer-avatar">FT</div>
+            <div class="developer-details">
+              <h4>Fotios Tsiadimos</h4>
+              <p class="developer-role">Creator & Maintainer</p>
+              <div class="developer-links">
+                <a href="https://github.com/ftsiadimos/ollamaiq" target="_blank" rel="noopener noreferrer" class="github-link">
+                  <svg class="github-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                  </svg>
+                  <span>github.com/ftsiadimos/ollamaiq</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel tech-panel">
+        <div class="panel-header">
+          <h3>🛠️ Technology Stack</h3>
+        </div>
+        <div class="tech-grid">
+          <div class="tech-item">
+            <span class="tech-name">Python</span>
+            <span class="tech-desc">Backend Logic</span>
+          </div>
+          <div class="tech-item">
+            <span class="tech-name">Flask</span>
+            <span class="tech-desc">Web Framework</span>
+          </div>
+          <div class="tech-item">
+            <span class="tech-name">Ollama</span>
+            <span class="tech-desc">LLM Integration</span>
+          </div>
+          <div class="tech-item">
+            <span class="tech-name">Chart.js</span>
+            <span class="tech-desc">Visualizations</span>
+          </div>
+          <div class="tech-item">
+            <span class="tech-name">SQLite</span>
+            <span class="tech-desc">Data Storage</span>
+          </div>
+          <div class="tech-item">
+            <span class="tech-name">Docker</span>
+            <span class="tech-desc">Containerization</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer class="footer">
+      <div class="footer-content">
+        <p>Fotios Tsiadimos</p>
+        <p><a href="https://github.com/ftsiadimos/ollamaiq" target="_blank" rel="noopener noreferrer">View on GitHub</a></p>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (function(){
+      const sel = document.getElementById('themeSelect');
+      const setTheme = (name) => {
+        document.documentElement.setAttribute('data-theme', name);
+        localStorage.setItem('theme', name);
+      };
+      const saved = localStorage.getItem('theme') || 'light';
+      setTheme(saved);
+      if (sel) { sel.value = saved; sel.addEventListener('change', e => setTheme(e.target.value)); }
+    })();
+  </script>
+</body>
+</html>
