@@ -35,10 +35,20 @@
     <div class="panel">
       <div class="panel-header">
         <h3>Saved Runs</h3>
-        <span class="panel-hint">Click a run to view or download JSON</span>
+        <span class="panel-hint">Click a run to view in dashboard with charts or download JSON</span>
       </div>
-      {% if runs|length == 0 %}
-        <p>No runs stored yet.</p>
+      {% if db_error %}
+        <div class="alert alert-error" role="alert">
+          <strong>Database Error</strong>
+          <div class="small" style="margin-top:8px">{{ db_error }}</div>
+          <div style="margin-top:12px">The database may not be initialized. Try running a benchmark first, or check server logs.</div>
+        </div>
+      {% elif runs|length == 0 %}
+        <div class="alert alert-info" role="status">
+          <strong>No runs stored yet.</strong>
+          <div class="small" style="margin-top:8px">Run a benchmark from the home page to save results here.</div>
+          <div style="margin-top:12px"><a href="/" class="badge">🏠 Run a benchmark</a></div>
+        </div>
       {% else %}
         <div class="table-responsive">
         <table class="results-table">
@@ -50,8 +60,8 @@
                 <td>{{ r.host }}</td>
                 <td>{{ r.created_at | datetimeformat }}</td>
                 <td>
-                  <a href="/download/{{ r.id }}" class="badge">Download JSON</a>
-                  <a href="/view/{{ r.id }}" class="badge">View</a>
+                  <a href="/view/{{ r.id }}" class="badge badge-info" title="View in dashboard with charts">📊 View in Dashboard</a>
+                  <a href="/download/{{ r.id }}" class="badge" title="Download raw JSON data">⬇️ Download JSON</a>
                 </td>
               </tr>
             {% endfor %}

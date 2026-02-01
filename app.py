@@ -254,15 +254,35 @@ def about():
     return render_template('about.html')
 
 
+@app.route('/delete_host', methods=['POST'])
+def delete_host():
+    payload = request.get_json() or {}
+    host = payload.get('host')
+    if not host:
+        return jsonify({'error': 'No host provided'})
+    try:
+        db.delete_host(host)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+
 @app.route('/history')
 def history():
-    runs = db.list_runs()
+    try:
+        runs = db.list_runs()
+    except Exception as e:
+        # DB not initialized or other error
+        return render_template('history.html', runs=[], db_error=str(e))
     return render_template('history.html', runs=runs)
 
 
 @app.route('/download/<int:run_id>')
 def download_run(run_id):
-    data = db.get_run(run_id)
+    try:
+        data = db.get_run(run_id)
+    except Exception as e:
+        return jsonify({'error': f'Database error: {e}'}), 500
     if not data:
         abort(404)
     return jsonify(data)
@@ -270,7 +290,10 @@ def download_run(run_id):
 
 @app.route('/view/<int:run_id>')
 def view_run(run_id):
-    data = db.get_run(run_id)
+    try:
+        data = db.get_run(run_id)
+    except Exception as e:
+        return render_template('index.html', results={'error': f'Database error: {e}'}, rows=[], fastest=None, best_code=None, best_smart=None, saved_hosts=get_saved_hosts())
     if not data:
         return render_template('history.html', runs=db.list_runs())
     return render_template('index.html', results=data, rows=[], fastest=None, best_code=None, best_smart=None, saved_hosts=get_saved_hosts())

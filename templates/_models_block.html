@@ -116,6 +116,7 @@
           if (data.error) {
             var log = document.getElementById('run-log');
             if (log) log.innerText = 'Error: ' + data.error;
+            if (window && typeof window.showError === 'function') window.showError(data.error);
             return;
           }
           var runId = data.run_id;
@@ -123,6 +124,7 @@
         }).catch(function(err){
           var log = document.getElementById('run-log');
           if (log) log.innerText = 'Error starting run: ' + err;
+          if (window && typeof window.showError === 'function') window.showError('Error starting run: ' + err);
         });
       });
 
@@ -151,11 +153,14 @@
               }
             }
             if (s.status === 'error') {
-              if (logEl) logEl.innerHTML += '<div style="color:#fca5a5"><strong>Error:</strong> ' + escapeHtml((s.messages || []).slice(-1)[0] || 'unknown') + '</div>';
+              var msg = (s.messages || []).slice(-1)[0] || 'unknown';
+              if (logEl) logEl.innerHTML += '<div style="color:#fca5a5"><strong>Error:</strong> ' + escapeHtml(msg) + '</div>';
+              if (window && typeof window.showError === 'function') window.showError(msg);
               clearInterval(timer);
             }
           }).catch(function(e){
             if (logEl) logEl.innerText = 'Error polling run: ' + e;
+            if (window && typeof window.showError === 'function') window.showError('Error polling run: ' + e);
             clearInterval(timer);
           });
         }, 1000);
@@ -204,13 +209,17 @@
         }
         // place results into the results area
         var resultsArea = document.getElementById('results-area');
+        var chartHtml = '<div class="chart-grid">' +
+          '<div class="chart-container"><div class="chart-header"><span class="chart-title">Mean Latency</span><button type="button" class="chart-fullscreen-btn" data-chart="latencyChart" title="View fullscreen">⛶</button></div><canvas id="latencyChart"></canvas></div>' +
+          '<div class="chart-container"><div class="chart-header"><span class="chart-title">Code vs Smartness</span><button type="button" class="chart-fullscreen-btn" data-chart="radarChart" title="View fullscreen">⛶</button></div><canvas id="radarChart"></canvas></div>' +
+          '</div>';
         if (resultsArea) {
           resultsArea.innerHTML = html;
           // attach canvases for charts
-          resultsArea.insertAdjacentHTML('beforeend', '<div class="chart-grid"><canvas id="latencyChart"></canvas><canvas id="radarChart"></canvas></div>');
+          resultsArea.insertAdjacentHTML('beforeend', chartHtml);
         } else {
           container.innerHTML = html;
-          container.insertAdjacentHTML('beforeend', '<div class="chart-grid"><canvas id="latencyChart"></canvas><canvas id="radarChart"></canvas></div>');
+          container.insertAdjacentHTML('beforeend', chartHtml);
           var progressEl = document.getElementById('run-progress');
           if (progressEl && progressEl.parentNode) {
             progressEl.parentNode.insertBefore(container, progressEl.nextSibling);
@@ -218,32 +227,115 @@
             runForm.parentNode.insertBefore(container, runForm.nextSibling);
           }
         }
+        // Attach fullscreen button handlers after rendering
+        attachFullscreenHandlers();
       }
 
       function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+      // Store chart data globally for fullscreen re-render
+      var chartData = {};
 
       function renderCharts(summary){
         // latency bar chart (mean per model)
         var models = (summary.models_tested||[]).map(function(m){ return m.model; });
         var means = (summary.models_tested||[]).map(function(m){ return (m.latency_stats||{}).mean || 0; });
-        var ctx = document.getElementById('latencyChart');
-        if (ctx && models.length) {
-          try{ new Chart(ctx.getContext('2d'), {type:'bar', data:{labels:models, datasets:[{label:'Mean latency (s)',data:means,backgroundColor:'rgba(124,58,237,0.6)'}]}, options:{responsive:true, maintainAspectRatio:false}}); }catch(e){console.warn(e)}
-        }
-        // radar chart for code vs smartness
-        var ctx2 = document.getElementById('radarChart');
-        if (ctx2 && models.length){
-          var data = {
+        
+        // Store data for fullscreen
+        chartData.latencyChart = {
+          type: 'bar',
+          data: {labels: models, datasets: [{label:'Mean latency (s)',data:means,backgroundColor:'rgba(124,58,237,0.6)'}]},
+          options: {responsive:true, maintainAspectRatio:false}
+        };
+        chartData.radarChart = {
+          type: 'radar',
+          data: {
             labels: models,
             datasets: [
               {label:'Code %', data:(summary.models_tested||[]).map(function(m){ return (m.code_score === null || m.code_score === undefined) ? 0 : m.code_score }), backgroundColor:'rgba(6,182,212,0.15)', borderColor:'rgba(6,182,212,0.6)'},
-
               {label:'Smartness %', data:(summary.models_tested||[]).map(m=>m.smartness_score||0), backgroundColor:'rgba(124,58,237,0.15)', borderColor:'rgba(124,58,237,0.9)'}
             ]
-          };
-          try{ new Chart(ctx2.getContext('2d'), {type:'radar', data:data, options:{responsive:true, maintainAspectRatio:false}}); }catch(e){console.warn(e)}
+          },
+          options: {responsive:true, maintainAspectRatio:false}
+        };
+
+        var ctx = document.getElementById('latencyChart');
+        if (ctx && models.length) {
+          try{ new Chart(ctx.getContext('2d'), chartData.latencyChart); }catch(e){console.warn(e)}
+        }
+        var ctx2 = document.getElementById('radarChart');
+        if (ctx2 && models.length){
+          try{ new Chart(ctx2.getContext('2d'), chartData.radarChart); }catch(e){console.warn(e)}
         }
       }
+
+      function attachFullscreenHandlers() {
+        document.querySelectorAll('.chart-fullscreen-btn').forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var chartId = btn.getAttribute('data-chart');
+            openChartFullscreen(chartId);
+          });
+        });
+      }
+
+      function openChartFullscreen(chartId) {
+        // Create modal if it doesn't exist
+        var modal = document.getElementById('chart-fullscreen-modal');
+        if (!modal) {
+          modal = document.createElement('div');
+          modal.id = 'chart-fullscreen-modal';
+          modal.className = 'chart-modal';
+          modal.innerHTML = '<div class="chart-modal-content"><div class="chart-modal-header"><span class="chart-modal-title"></span><button type="button" class="chart-modal-close" title="Close">✕</button></div><div class="chart-modal-body"><canvas id="fullscreenChart"></canvas></div></div>';
+          document.body.appendChild(modal);
+          
+          // Close handlers
+          modal.querySelector('.chart-modal-close').addEventListener('click', closeChartFullscreen);
+          modal.addEventListener('click', function(e) {
+            if (e.target === modal) closeChartFullscreen();
+          });
+          document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeChartFullscreen();
+          });
+        }
+
+        // Set title
+        var title = chartId === 'latencyChart' ? 'Mean Latency' : 'Code vs Smartness';
+        modal.querySelector('.chart-modal-title').textContent = title;
+
+        // Show modal
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+
+        // Render chart in fullscreen
+        setTimeout(function() {
+          var ctx = document.getElementById('fullscreenChart');
+          if (ctx && chartData[chartId]) {
+            // Destroy existing chart if any
+            if (window.fullscreenChartInstance) {
+              window.fullscreenChartInstance.destroy();
+            }
+            window.fullscreenChartInstance = new Chart(ctx.getContext('2d'), JSON.parse(JSON.stringify(chartData[chartId])));
+          }
+        }, 100);
+      }
+
+      function closeChartFullscreen() {
+        var modal = document.getElementById('chart-fullscreen-modal');
+        if (modal) {
+          modal.classList.remove('active');
+          document.body.style.overflow = '';
+          if (window.fullscreenChartInstance) {
+            window.fullscreenChartInstance.destroy();
+            window.fullscreenChartInstance = null;
+          }
+        }
+      }
+
+      // Expose functions globally for history page
+      window.renderCharts = renderCharts;
+      window.chartData = chartData;
+      window.attachFullscreenHandlers = attachFullscreenHandlers;
 
     })();
   </script>
