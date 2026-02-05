@@ -39,32 +39,48 @@
   
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+
+  /* Dashboard specific tokens (compact, slightly darker sidebar) */
+  --sidebar-bg: #0f1724; /* deep navy */
+  --sidebar-text: #d8e6ef;
+  --sidebar-muted: #9aa7b2;
+  --sidebar-active-bg: rgba(6,182,212,0.08);
+  --accent-alt: #06b6d4; /* teal-ish accent used for highlights */
+  --container-max: 95vw; /* use 95% of viewport width */
+  --panel-padding-compact: 18px;
 }
+
 
 /* Dark theme */
 html[data-theme="dark"] {
-  --bg-primary: #1a1a1f;
-  --bg-secondary: #232328;
-  --bg-card: #2a2a30;
-  --bg-hover: #35353d;
+  --bg-primary: #0b1220;
+  --bg-secondary: #0f1724;
+  --bg-card: #121826;
+  --bg-hover: #0e1722;
   
-  --text-primary: #f0eeeb;
-  --text-secondary: #a8a5a0;
-  --text-muted: #737069;
+  --text-primary: #e6eef8;
+  --text-secondary: #b6c3cd;
+  --text-muted: #93a3ad;
   
-  --accent: #818cf8;
-  --accent-light: #a5b4fc;
-  --accent-subtle: rgba(129, 140, 248, 0.12);
-  --accent-glow: rgba(129, 140, 248, 0.2);
+  --accent: #8ab4ff;
+  --accent-light: #bcd7ff;
+  --accent-subtle: rgba(138, 180, 255, 0.08);
+  --accent-glow: rgba(138, 180, 255, 0.12);
   
   --success-subtle: rgba(16, 185, 129, 0.15);
   --error-subtle: rgba(239, 68, 68, 0.12);
   
-  --border: rgba(255, 255, 255, 0.06);
-  --border-strong: rgba(255, 255, 255, 0.1);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
-  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.35);
+  --border: rgba(255, 255, 255, 0.04);
+  --border-strong: rgba(255, 255, 255, 0.08);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.28);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 10px 36px rgba(0, 0, 0, 0.4);
+
+  /* dark sidebar tokens */
+  --sidebar-bg: #07111a;
+  --sidebar-text: #dbeaf6;
+  --sidebar-muted: #8ea1ad;
+  --accent-alt: #06b6d4;
 }
 
 /* Warm dark theme */
@@ -121,9 +137,9 @@ a:hover {
 
 /* ===== Layout ===== */
 .container {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 24px;
+  /* Flexible container: never smaller than 760px, scales with viewport, and caps at 1600px
+     Use ~80% of viewport to make the dashboard area centered and more compact */
+  width: clamp(760px, 80vw, 1600px);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -198,6 +214,132 @@ a:hover {
   transition: all 0.2s ease;
 }
 
+/* ===== Sidebar layout (new) ===== */
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+.sidebar {
+  /* responsive: stays compact on small screens, grows slightly on wider screens */
+  width: clamp(160px, 14vw, 260px);
+  padding: 14px 14px;
+  background: var(--sidebar-bg);
+  color: var(--sidebar-text);
+  border-right: 1px solid rgba(255,255,255,0.03);
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sidebar-brand {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.sidebar .logo {
+  width: clamp(32px, 4.5vw, 48px);
+  height: clamp(32px, 4.5vw, 48px);
+  font-size: clamp(14px, 1.6vw, 20px);
+  box-shadow: none;
+  background: linear-gradient(135deg, var(--accent-alt), var(--accent));
+}
+
+.sidebar .brand-text .title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--sidebar-text);
+}
+
+.sidebar .brand-text .subtitle {
+  font-size: 0.72rem;
+  margin-top: 2px;
+  color: var(--sidebar-muted);
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar .nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--sidebar-text);
+  background: transparent;
+  text-decoration: none;
+  transition: all 0.12s ease;
+  font-size: 0.9rem;
+}
+
+.sidebar .nav-item:hover {
+  background: rgba(255,255,255,0.02);
+  color: var(--sidebar-text);
+}
+
+.sidebar .nav-item.active {
+  background: var(--sidebar-active-bg);
+  color: var(--accent-alt);
+  font-weight: 700;
+}
+
+.quick-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.main {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.main-header .page-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+/* Collapse sidebar on small screens */
+@media (max-width: 968px) {
+  .sidebar {
+    display: none;
+  }
+  .main { padding: 12px; }
+}
+
+/* Navigation links */
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
 .nav-link:hover {
   color: var(--text-primary);
   background: var(--bg-hover);
@@ -210,19 +352,19 @@ a:hover {
   border-color: transparent;
 }
 
-/* Legacy badge class - maps to nav-link */
+/* Legacy badge class - maps to nav-link - compact variant */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
-  font-size: 0.8125rem;
-  font-weight: 500;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
   color: var(--text-secondary);
-  background: var(--bg-secondary);
+  background: rgba(0,0,0,0.04);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  transition: all 0.2s ease;
+  border-radius: 999px;
+  transition: all 0.12s ease;
   text-decoration: none;
 }
 
@@ -232,8 +374,9 @@ a:hover {
 }
 
 .badge-info {
-  color: var(--accent);
-  background: var(--accent-subtle);
+  color: var(--accent-alt);
+  background: rgba(6,182,212,0.08);
+  border-color: transparent;
 }
 
 /* Theme selector */
@@ -267,9 +410,27 @@ a:hover {
 /* ===== Main Grid Layout ===== */
 .grid {
   display: grid;
-  grid-template-columns: 380px 1fr;
+  /* flexible left column with an upper limit and the right column taking remaining space */
+  grid-template-columns: minmax(300px, 480px) 1fr;
   gap: 24px;
   flex: 1;
+}
+
+/* Medium screens: use a percentage-based left column for better distribution */
+@media (max-width: 1400px) and (min-width: 968px) {
+  .grid {
+    grid-template-columns: minmax(280px, 40%) 1fr;
+    gap: 18px;
+  }
+}
+
+/* Large screens: use a 30% / 50% split for left/right columns and center the grid tracks */
+@media (min-width: 1400px) {
+  .grid {
+    grid-template-columns: 30% 50%;
+    gap: 28px;
+    justify-content: center; /* centers the defined columns so they occupy ~80% of the container */
+  }
 }
 
 @media (max-width: 968px) {
@@ -284,16 +445,16 @@ a:hover {
   .results-panel {
     order: 2;
   }
-}
+} 
 
 /* ===== Panels / Cards ===== */
 .panel {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 24px;
+  padding: var(--panel-padding-compact);
   box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow 0.15s ease;
 }
 
 .panel:hover {
@@ -304,20 +465,20 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
   border-bottom: 1px solid var(--border);
 }
 
 .panel-header h3 {
-  font-size: 1.1rem;
+  font-size: 1.0rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .panel-hint {
-  font-size: 0.8125rem;
-  color: var(--text-muted);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
 }
 
 /* ===== Forms ===== */
@@ -479,11 +640,11 @@ button.secondary:hover {
 }
 
 .models-count {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  padding: 4px 10px;
-  background: var(--bg-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--sidebar-muted);
+  padding: 3px 8px;
+  background: transparent;
   border-radius: 999px;
 }
 

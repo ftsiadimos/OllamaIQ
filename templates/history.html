@@ -1,94 +1,47 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>History - Ollama IQ Test</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-  <div class="container">
-    <header class="header">
-      <div class="brand">
-        <span class="logo" aria-hidden="true"></span>
-        <div>
-          <div class="title">Run History</div>
-          <div class="subtitle">Review and export previous benchmark results</div>
-        </div>
-      </div>
-      <div class="header-actions">
-        <a href="/" class="badge">🏠 Home</a>
-        <a href="/about" class="badge badge-info">ℹ️ About</a>
-        <label class="theme-selector">
-          <select id="themeSelect" aria-label="Theme selector">
-            <option value="light">☀️ Light</option>
-            <option value="dark">🌙 Dark</option>
-            <option value="warm-dark">🔥 Warm Dark</option>
-          </select>
-        </label>
-      </div>
-    </header>
+{% extends "base.html" %}
 
-    <div class="panel">
-      <div class="panel-header">
-        <h3>Saved Runs</h3>
-        <span class="panel-hint">Click a run to view in dashboard with charts or download JSON</span>
-      </div>
-      {% if db_error %}
-        <div class="alert alert-error" role="alert">
-          <strong>Database Error</strong>
-          <div class="small" style="margin-top:8px">{{ db_error }}</div>
-          <div style="margin-top:12px">The database may not be initialized. Try running a benchmark first, or check server logs.</div>
-        </div>
-      {% elif runs|length == 0 %}
-        <div class="alert alert-info" role="status">
-          <strong>No runs stored yet.</strong>
-          <div class="small" style="margin-top:8px">Run a benchmark from the home page to save results here.</div>
-          <div style="margin-top:12px"><a href="/" class="badge">🏠 Run a benchmark</a></div>
-        </div>
-      {% else %}
-        <div class="table-responsive">
-        <table class="results-table">
-          <thead><tr><th>ID</th><th>Host</th><th>Time</th><th>Actions</th></tr></thead>
-          <tbody>
-            {% for r in runs %}
-              <tr>
-                <td>{{ r.id }}</td>
-                <td>{{ r.host }}</td>
-                <td>{{ r.created_at | datetimeformat }}</td>
-                <td>
-                  <a href="/view/{{ r.id }}" class="badge badge-info" title="View in dashboard with charts">📊 View in Dashboard</a>
-                  <a href="/download/{{ r.id }}" class="badge" title="Download raw JSON data">⬇️ Download JSON</a>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        </div>
-      {% endif %}
+{% block title %}History - Ollama IQ Test{% endblock %}
+
+{% block page_title %}Run History{% endblock %}
+{% block page_subtitle %}Review and export previous benchmark results{% endblock %}
+
+{% block content %}
+  <div class="panel">
+    <div class="panel-header">
+      <h3>Saved Runs</h3>
+      <span class="panel-hint">Click a run to view in dashboard with charts or download JSON</span>
     </div>
-
-    <footer class="footer">
-      <div class="footer-content">
-        <p>Fotios Tsiadimos</p>
-        <p><a href="https://github.com/ftsiadimos/ollamaiq" target="_blank" rel="noopener noreferrer">View on GitHub</a></p>
+    {% if db_error %}
+      <div class="alert alert-error" role="alert">
+        <strong>Database Error</strong>
+        <div class="small" style="margin-top:8px">{{ db_error }}</div>
+        <div style="margin-top:12px">The database may not be initialized. Try running a benchmark first, or check server logs.</div>
       </div>
-    </footer>
+    {% elif runs|length == 0 %}
+      <div class="alert alert-info" role="status">
+        <strong>No runs stored yet.</strong>
+        <div class="small" style="margin-top:8px">Run a benchmark from the home page to save results here.</div>
+        <div style="margin-top:12px"><a href="/" class="badge">🏠 Run a benchmark</a></div>
+      </div>
+    {% else %}
+      <div class="table-responsive">
+      <table class="results-table">
+        <thead><tr><th>ID</th><th>Host</th><th>Time</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for r in runs %}
+            <tr>
+              <td>{{ r.id }}</td>
+              <td>{{ r.host }}</td>
+              <td>{{ r.created_at | datetimeformat }}</td>
+              <td>
+                <a href="/view/{{ r.id }}" class="badge badge-info" title="View in dashboard with charts">📊 View in Dashboard</a>
+                <a href="/download/{{ r.id }}" class="badge" title="Download raw JSON data">⬇️ Download JSON</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    {% endif %}
   </div>
-  <script>
-    (function(){
-      const sel = document.getElementById('themeSelect');
-      const setTheme = (name) => {
-        document.documentElement.setAttribute('data-theme', name);
-        localStorage.setItem('theme', name);
-      };
-      const saved = localStorage.getItem('theme') || 'light';
-      setTheme(saved);
-      if (sel) { sel.value = saved; sel.addEventListener('change', e => setTheme(e.target.value)); }
-    })();
-  </script>
-</body>
-</html>
+{% endblock %}

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Ollama IQ Test{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div class="brand-text">
+          <div class="title">Ollama IQ</div>
+          <div class="subtitle small">Benchmark your models</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Main navigation">
+        <a class="nav-item {% if request.path == '/' %}active{% endif %}" href="/">🏠 Dashboard</a>
+        <a class="nav-item {% if '/history' in request.path %}active{% endif %}" href="/history">📊 History</a>
+        <a class="nav-item {% if '/about' in request.path %}active{% endif %}" href="/about">ℹ️ About</a>
+      </nav>
+
+    </aside>
+
+    <main class="main">
+      <header class="main-header">
+        <div class="main-header-left">
+          <div class="page-title">{% block page_title %}{% endblock %}</div>
+          <div class="page-subtitle small muted">{% block page_subtitle %}{% endblock %}</div>
+        </div>
+        <div class="header-actions">
+          <a href="/" class="badge">🏠 Home</a>
+          <a href="/history" class="badge">📊 History</a>
+          <a href="/about" class="badge badge-info">ℹ️ About</a>
+          <label class="theme-selector">
+            <select id="themeSelect" aria-label="Theme selector">
+              <option value="light">☀️ Light</option>
+              <option value="dark">🌙 Dark</option>
+              <option value="warm-dark">🔥 Warm Dark</option>
+            </select>
+          </label>
+        </div>
+      </header>
+
+      <div class="container"> 
+        {% block content %}{% endblock %}
+
+        <footer class="footer">
+          <div class="footer-content">
+            <!-- Footer content intentionally removed -->
+          </div>
+        </footer>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function(){
+      const sel = document.getElementById('themeSelect');
+      const setTheme = (name) => {
+        document.documentElement.setAttribute('data-theme', name);
+        localStorage.setItem('theme', name);
+      };
+      const saved = localStorage.getItem('theme') || 'light';
+      setTheme(saved);
+      if (sel) {
+        sel.value = saved;
+        sel.addEventListener('change', function(e){ setTheme(e.target.value); });
+      }
+    })();
+  </script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

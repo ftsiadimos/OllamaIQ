@@ -1,308 +1,265 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Ollama IQ Test</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body>
-  <div class="container">
-    <header class="header">
-      <div class="brand">
-        <span class="logo" aria-hidden="true"></span>
-        <div>
-          <div class="title">Ollama IQ Test</div>
-          <div class="subtitle">Benchmark your local LLM models</div>
-        </div>
+{% extends "base.html" %}
+
+{% block title %}Ollama IQ Test{% endblock %}
+
+{% block page_title %}Ollama IQ Test{% endblock %}
+{% block page_subtitle %}Benchmark your local LLM models{% endblock %}
+
+{% block content %}
+  <div id="global-alert" class="alert" style="display:none;" role="alert" aria-live="assertive"></div>
+  <script>
+    (function(){
+      function hideAlert(){ var el = document.getElementById('global-alert'); if(!el) return; el.style.display='none'; el.innerHTML=''; el.classList.remove('alert-error','alert-info'); }
+      function showError(msg){ var el = document.getElementById('global-alert'); if(!el) return; el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">' + '<div><strong>Error:</strong> ' + String(msg) + '</div>' + '<button class="chart-modal-close" onclick="hideAlert()" aria-label="close">✕</button>' + '</div>'; el.classList.add('alert-error'); el.style.display='block'; window.scrollTo({top:0,behavior:"smooth"}); }
+      window.showError = showError;
+      window.hideAlert = hideAlert;
+    })();
+  </script>
+
+  <div class="grid">
+    <section class="panel controls">
+      <div class="panel-header">
+        <h3>Connection</h3>
+        <span class="panel-hint">Choose a host and fetch models</span>
       </div>
-      <div class="header-actions">
-        <a href="/history" class="badge">📊 History</a>
-        <a href="/about" class="badge badge-info">ℹ️ About</a>
-        <label class="theme-selector">
-          <select id="themeSelect" aria-label="Theme selector">
-            <option value="light">☀️ Light</option>
-            <option value="dark">🌙 Dark</option>
-            <option value="warm-dark">🔥 Warm Dark</option>
-          </select>
+      <form id="fetchForm" action="/fetch" method="post" class="stack">
+        <label>
+          Saved hosts
+          <div class="host-select-wrapper">
+            <select name="host" id="hostSelect">
+              {% set host_list = saved_hosts %}
+              {% set current_host = results.host if results else '' %}
+              {% for h in host_list %}
+                <option value="{{ h }}" {% if h == current_host %}selected{% endif %}>{{ h }}</option>
+              {% endfor %}
+            </select>
+            <button type="button" class="host-delete-btn" id="deleteHostBtn" title="Delete selected host" aria-label="Delete selected host">🗑️</button>
+          </div>
         </label>
-      </div>
-    </header>
-
-    <script>
-      (function(){
-        const sel = document.getElementById('themeSelect');
-        const setTheme = (name) => {
-          document.documentElement.setAttribute('data-theme', name);
-          localStorage.setItem('theme', name);
-        };
-        const saved = localStorage.getItem('theme') || 'light';
-        setTheme(saved);
-        if (sel) {
-          sel.value = saved;
-          sel.addEventListener('change', function(e){ setTheme(e.target.value); });
-        }
-      })();
-    </script>
-
-    <div id="global-alert" class="alert" style="display:none;" role="alert" aria-live="assertive"></div>
-    <script>
-      (function(){
-        function hideAlert(){ var el = document.getElementById('global-alert'); if(!el) return; el.style.display='none'; el.innerHTML=''; el.classList.remove('alert-error','alert-info'); }
-        function showError(msg){ var el = document.getElementById('global-alert'); if(!el) return; el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">' + '<div><strong>Error:</strong> ' + String(msg) + '</div>' + '<button class="chart-modal-close" onclick="hideAlert()" aria-label="close">✕</button>' + '</div>'; el.classList.add('alert-error'); el.style.display='block'; window.scrollTo({top:0,behavior:"smooth"}); }
-        window.showError = showError;
-        window.hideAlert = hideAlert;
-      })();
-    </script>
-
-    <div class="grid">
-      <section class="panel controls">
-        <div class="panel-header">
-          <h3>Connection</h3>
-          <span class="panel-hint">Choose a host and fetch models</span>
+        <script>
+          (function(){
+            var deleteBtn = document.getElementById('deleteHostBtn');
+            var hostSelect = document.getElementById('hostSelect');
+            if (deleteBtn && hostSelect) {
+              deleteBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                var host = hostSelect.value;
+                if (!host) return;
+                if (!confirm('Delete saved host "' + host + '"?')) return;
+                fetch('/delete_host', {
+                  method: 'POST',
+                  headers: {'Content-Type': 'application/json'},
+                  body: JSON.stringify({host: host})
+                }).then(function(r){ return r.json(); }).then(function(data){
+                  if (data.success) {
+                    // Remove from select
+                    var opt = hostSelect.querySelector('option[value="' + CSS.escape(host) + '"]');
+                    if (opt) opt.remove();
+                    // Select first remaining or clear
+                    if (hostSelect.options.length > 0) hostSelect.selectedIndex = 0;
+                  } else if (data.error) {
+                    if (window.showError) window.showError(data.error);
+                  }
+                }).catch(function(err){
+                  if (window.showError) window.showError('Failed to delete host: ' + err);
+                });
+              });
+            }
+          })();
+        </script>
+        <label>
+          Or enter new host
+          <input type="text" name="host_new" value="" placeholder="http://localhost:11434" autocomplete="url">
+        </label>
+        <label>
+          API key (optional)
+          <input type="password" name="api_key" autocomplete="current-password" placeholder="sk-...">
+        </label>
+        <label>
+          Repeat per prompt
+          <input type="number" name="repeat" value="1" min="1" step="1">
+        </label>
+        <div class="form-actions">
+          <button type="submit">Fetch models</button>
+          <button type="button" class="secondary" onclick="document.getElementById('hostSelect').value='http://localhost:11434'">Reset</button>
         </div>
-        <form id="fetchForm" action="/fetch" method="post" class="stack">
-          <label>
-            Saved hosts
-            <div class="host-select-wrapper">
-              <select name="host" id="hostSelect">
-                {% set host_list = saved_hosts %}
-                {% set current_host = results.host if results else '' %}
-                {% for h in host_list %}
-                  <option value="{{ h }}" {% if h == current_host %}selected{% endif %}>{{ h }}</option>
+      </form>
+
+      <div id="models-container" class="stack-lg">
+        <!-- models checkbox block (rendered when available) -->
+        {% if results and results.available_models and (rows is not defined or rows|length == 0) %}
+          {% import '_models_block.html' as mb %}
+          {{ mb.models_block(results.available_models, results.host) }}
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="panel results-panel">
+      <div class="panel-header">
+        <h3>Live Progress</h3>
+        <span class="panel-hint">Run logs and charts render here</span>
+      </div>
+      <div id="progress-area"></div>
+      <div id="results-area">
+        {% if results and results.models_tested and results.models_tested|length > 0 %}
+          <!-- Viewing saved run from history -->
+          <h3>Results</h3>
+          {% set top = results.top_summary %}
+          {% if top %}
+          <div class="summary-card" style="margin-bottom:8px;padding:8px">
+            {% if top.fastest %}
+            <div><strong>Fastest:</strong> {{ top.fastest.model }} ({{ top.fastest.mean }}s)</div>
+            {% endif %}
+            {% if top.best_code %}
+            <div><strong>Best code:</strong> {{ top.best_code.model }} ({{ top.best_code.code_score or 'N/A' }}%)</div>
+            {% endif %}
+            {% if top.best_smart %}
+            <div><strong>Best smartness:</strong> {{ top.best_smart.model }} ({{ top.best_smart.smartness_score or 'N/A' }}%)</div>
+            {% endif %}
+          </div>
+          {% endif %}
+          <div class="table-responsive">
+            <table class="results-table">
+              <thead>
+                <tr>
+                  <th>Model</th>
+                  <th class="numeric">Smartness</th>
+                  <th class="numeric">Code</th>
+                  <th class="numeric">Mean</th>
+                  <th class="numeric">Median</th>
+                  <th class="numeric">Min</th>
+                  <th class="numeric">Max</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for m in results.models_tested %}
+                <tr>
+                  <td>{{ m.model }}</td>
+                  <td>{{ m.smartness_score }}%</td>
+                  <td>{{ m.code_score if m.code_score is not none else 'N/A' }}{% if m.code_score is not none %}%{% endif %}</td>
+                  <td>{{ m.latency_stats.mean if m.latency_stats else '' }}</td>
+                  <td>{{ m.latency_stats.median if m.latency_stats else '' }}</td>
+                  <td>{{ m.latency_stats.min if m.latency_stats else '' }}</td>
+                  <td>{{ m.latency_stats.max if m.latency_stats else '' }}</td>
+                </tr>
                 {% endfor %}
-              </select>
-              <button type="button" class="host-delete-btn" id="deleteHostBtn" title="Delete selected host" aria-label="Delete selected host">🗑️</button>
+              </tbody>
+            </table>
+          </div>
+          <div class="chart-grid">
+            <div class="chart-container">
+              <div class="chart-header">
+                <span class="chart-title">Mean Latency</span>
+                <button type="button" class="chart-fullscreen-btn" data-chart="latencyChart" title="View fullscreen">⛶</button>
+              </div>
+              <canvas id="latencyChart"></canvas>
             </div>
-          </label>
+            <div class="chart-container">
+              <div class="chart-header">
+                <span class="chart-title">Code vs Smartness</span>
+                <button type="button" class="chart-fullscreen-btn" data-chart="radarChart" title="View fullscreen">⛶</button>
+              </div>
+              <canvas id="radarChart"></canvas>
+            </div>
+          </div>
           <script>
             (function(){
-              var deleteBtn = document.getElementById('deleteHostBtn');
-              var hostSelect = document.getElementById('hostSelect');
-              if (deleteBtn && hostSelect) {
-                deleteBtn.addEventListener('click', function(e) {
-                  e.preventDefault();
-                  var host = hostSelect.value;
-                  if (!host) return;
-                  if (!confirm('Delete saved host "' + host + '"?')) return;
-                  fetch('/delete_host', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({host: host})
-                  }).then(function(r){ return r.json(); }).then(function(data){
-                    if (data.success) {
-                      // Remove from select
-                      var opt = hostSelect.querySelector('option[value="' + CSS.escape(host) + '"]');
-                      if (opt) opt.remove();
-                      // Select first remaining or clear
-                      if (hostSelect.options.length > 0) hostSelect.selectedIndex = 0;
-                    } else if (data.error) {
-                      if (window.showError) window.showError(data.error);
-                    }
-                  }).catch(function(err){
-                    if (window.showError) window.showError('Failed to delete host: ' + err);
-                  });
-                });
+              var savedResults = {{ results | tojson | safe }};
+              
+              // Store chart data globally for fullscreen
+              var chartData = window.chartData || {};
+              
+              var models = (savedResults.models_tested||[]).map(function(m){ return m.model; });
+              var means = (savedResults.models_tested||[]).map(function(m){ return (m.latency_stats||{}).mean || 0; });
+              
+              chartData.latencyChart = {
+                type: 'bar',
+                data: {labels: models, datasets: [{label:'Mean latency (s)', data: means, backgroundColor:'rgba(124,58,237,0.6)'}]},
+                options: {responsive: true, maintainAspectRatio: false}
+              };
+              chartData.radarChart = {
+                type: 'radar',
+                data: {
+                  labels: models,
+                  datasets: [
+                    {label:'Code %', data:(savedResults.models_tested||[]).map(function(m){ return (m.code_score === null || m.code_score === undefined) ? 0 : m.code_score }), backgroundColor:'rgba(6,182,212,0.15)', borderColor:'rgba(6,182,212,0.6)'},
+                    {label:'Smartness %', data:(savedResults.models_tested||[]).map(function(m){ return m.smartness_score||0 }), backgroundColor:'rgba(124,58,237,0.15)', borderColor:'rgba(124,58,237,0.9)'}
+                  ]
+                },
+                options: {responsive: true, maintainAspectRatio: false}
+              };
+              
+              window.chartData = chartData;
+              
+              var ctx = document.getElementById('latencyChart');
+              if (ctx && models.length) {
+                try { new Chart(ctx.getContext('2d'), chartData.latencyChart); } catch(e) { console.warn(e); }
               }
-            })();
-          </script>
-          <label>
-            Or enter new host
-            <input type="text" name="host_new" value="" placeholder="http://localhost:11434" autocomplete="url">
-          </label>
-          <label>
-            API key (optional)
-            <input type="password" name="api_key" autocomplete="current-password" placeholder="sk-...">
-          </label>
-          <label>
-            Repeat per prompt
-            <input type="number" name="repeat" value="1" min="1" step="1">
-          </label>
-          <div class="form-actions">
-            <button type="submit">Fetch models</button>
-            <button type="button" class="secondary" onclick="document.getElementById('hostSelect').value='http://localhost:11434'">Reset</button>
-          </div>
-        </form>
-
-        <div id="models-container" class="stack-lg">
-          <!-- models checkbox block (rendered when available) -->
-          {% if results and results.available_models and (rows is not defined or rows|length == 0) %}
-            {% import '_models_block.html' as mb %}
-            {{ mb.models_block(results.available_models, results.host) }}
-          {% endif %}
-        </div>
-      </section>
-
-      <section class="panel results-panel">
-        <div class="panel-header">
-          <h3>Live Progress</h3>
-          <span class="panel-hint">Run logs and charts render here</span>
-        </div>
-        <div id="progress-area"></div>
-        <div id="results-area">
-          {% if results and results.models_tested and results.models_tested|length > 0 %}
-            <!-- Viewing saved run from history -->
-            <h3>Results</h3>
-            {% set top = results.top_summary %}
-            {% if top %}
-            <div class="summary-card" style="margin-bottom:8px;padding:8px">
-              {% if top.fastest %}
-              <div><strong>Fastest:</strong> {{ top.fastest.model }} ({{ top.fastest.mean }}s)</div>
-              {% endif %}
-              {% if top.best_code %}
-              <div><strong>Best code:</strong> {{ top.best_code.model }} ({{ top.best_code.code_score or 'N/A' }}%)</div>
-              {% endif %}
-              {% if top.best_smart %}
-              <div><strong>Best smartness:</strong> {{ top.best_smart.model }} ({{ top.best_smart.smartness_score or 'N/A' }}%)</div>
-              {% endif %}
-            </div>
-            {% endif %}
-            <div class="table-responsive">
-              <table class="results-table">
-                <thead>
-                  <tr>
-                    <th>Model</th>
-                    <th class="numeric">Smartness</th>
-                    <th class="numeric">Code</th>
-                    <th class="numeric">Mean</th>
-                    <th class="numeric">Median</th>
-                    <th class="numeric">Min</th>
-                    <th class="numeric">Max</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for m in results.models_tested %}
-                  <tr>
-                    <td>{{ m.model }}</td>
-                    <td>{{ m.smartness_score }}%</td>
-                    <td>{{ m.code_score if m.code_score is not none else 'N/A' }}{% if m.code_score is not none %}%{% endif %}</td>
-                    <td>{{ m.latency_stats.mean if m.latency_stats else '' }}</td>
-                    <td>{{ m.latency_stats.median if m.latency_stats else '' }}</td>
-                    <td>{{ m.latency_stats.min if m.latency_stats else '' }}</td>
-                    <td>{{ m.latency_stats.max if m.latency_stats else '' }}</td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-            <div class="chart-grid">
-              <div class="chart-container">
-                <div class="chart-header">
-                  <span class="chart-title">Mean Latency</span>
-                  <button type="button" class="chart-fullscreen-btn" data-chart="latencyChart" title="View fullscreen">⛶</button>
-                </div>
-                <canvas id="latencyChart"></canvas>
-              </div>
-              <div class="chart-container">
-                <div class="chart-header">
-                  <span class="chart-title">Code vs Smartness</span>
-                  <button type="button" class="chart-fullscreen-btn" data-chart="radarChart" title="View fullscreen">⛶</button>
-                </div>
-                <canvas id="radarChart"></canvas>
-              </div>
-            </div>
-            <script>
-              (function(){
-                var savedResults = {{ results | tojson | safe }};
-                
-                // Store chart data globally for fullscreen
-                var chartData = window.chartData || {};
-                
-                var models = (savedResults.models_tested||[]).map(function(m){ return m.model; });
-                var means = (savedResults.models_tested||[]).map(function(m){ return (m.latency_stats||{}).mean || 0; });
-                
-                chartData.latencyChart = {
-                  type: 'bar',
-                  data: {labels: models, datasets: [{label:'Mean latency (s)', data: means, backgroundColor:'rgba(124,58,237,0.6)'}]},
-                  options: {responsive: true, maintainAspectRatio: false}
-                };
-                chartData.radarChart = {
-                  type: 'radar',
-                  data: {
-                    labels: models,
-                    datasets: [
-                      {label:'Code %', data:(savedResults.models_tested||[]).map(function(m){ return (m.code_score === null || m.code_score === undefined) ? 0 : m.code_score }), backgroundColor:'rgba(6,182,212,0.15)', borderColor:'rgba(6,182,212,0.6)'},
-                      {label:'Smartness %', data:(savedResults.models_tested||[]).map(function(m){ return m.smartness_score||0 }), backgroundColor:'rgba(124,58,237,0.15)', borderColor:'rgba(124,58,237,0.9)'}
-                    ]
-                  },
-                  options: {responsive: true, maintainAspectRatio: false}
-                };
-                
-                window.chartData = chartData;
-                
-                var ctx = document.getElementById('latencyChart');
-                if (ctx && models.length) {
-                  try { new Chart(ctx.getContext('2d'), chartData.latencyChart); } catch(e) { console.warn(e); }
-                }
-                var ctx2 = document.getElementById('radarChart');
-                if (ctx2 && models.length) {
-                  try { new Chart(ctx2.getContext('2d'), chartData.radarChart); } catch(e) { console.warn(e); }
-                }
-                
-                // Fullscreen handlers
-                function openChartFullscreen(chartId) {
-                  var modal = document.getElementById('chart-fullscreen-modal');
-                  if (!modal) {
-                    modal = document.createElement('div');
-                    modal.id = 'chart-fullscreen-modal';
-                    modal.className = 'chart-modal';
-                    modal.innerHTML = '<div class="chart-modal-content"><div class="chart-modal-header"><span class="chart-modal-title"></span><button type="button" class="chart-modal-close" title="Close">✕</button></div><div class="chart-modal-body"><canvas id="fullscreenChart"></canvas></div></div>';
-                    document.body.appendChild(modal);
-                    
-                    modal.querySelector('.chart-modal-close').addEventListener('click', closeChartFullscreen);
-                    modal.addEventListener('click', function(e) {
-                      if (e.target === modal) closeChartFullscreen();
-                    });
-                    document.addEventListener('keydown', function(e) {
-                      if (e.key === 'Escape') closeChartFullscreen();
-                    });
-                  }
+              var ctx2 = document.getElementById('radarChart');
+              if (ctx2 && models.length) {
+                try { new Chart(ctx2.getContext('2d'), chartData.radarChart); } catch(e) { console.warn(e); }
+              }
+              
+              // Fullscreen handlers
+              function openChartFullscreen(chartId) {
+                var modal = document.getElementById('chart-fullscreen-modal');
+                if (!modal) {
+                  modal = document.createElement('div');
+                  modal.id = 'chart-fullscreen-modal';
+                  modal.className = 'chart-modal';
+                  modal.innerHTML = '<div class="chart-modal-content"><div class="chart-modal-header"><span class="chart-modal-title"></span><button type="button" class="chart-modal-close" title="Close">✕</button></div><div class="chart-modal-body"><canvas id="fullscreenChart"></canvas></div></div>';
+                  document.body.appendChild(modal);
                   
-                  var title = chartId === 'latencyChart' ? 'Mean Latency' : 'Code vs Smartness';
-                  modal.querySelector('.chart-modal-title').textContent = title;
-                  modal.classList.add('active');
-                  document.body.style.overflow = 'hidden';
-                  
-                  setTimeout(function() {
-                    var ctx = document.getElementById('fullscreenChart');
-                    if (ctx && chartData[chartId]) {
-                      if (window.fullscreenChartInstance) {
-                        window.fullscreenChartInstance.destroy();
-                      }
-                      window.fullscreenChartInstance = new Chart(ctx.getContext('2d'), JSON.parse(JSON.stringify(chartData[chartId])));
-                    }
-                  }, 100);
+                  modal.querySelector('.chart-modal-close').addEventListener('click', closeChartFullscreen);
+                  modal.addEventListener('click', function(e) {
+                    if (e.target === modal) closeChartFullscreen();
+                  });
+                  document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') closeChartFullscreen();
+                  });
                 }
                 
-                function closeChartFullscreen() {
-                  var modal = document.getElementById('chart-fullscreen-modal');
-                  if (modal) {
-                    modal.classList.remove('active');
-                    document.body.style.overflow = '';
+                var title = chartId === 'latencyChart' ? 'Mean Latency' : 'Code vs Smartness';
+                modal.querySelector('.chart-modal-title').textContent = title;
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                
+                setTimeout(function() {
+                  var ctx = document.getElementById('fullscreenChart');
+                  if (ctx && chartData[chartId]) {
                     if (window.fullscreenChartInstance) {
                       window.fullscreenChartInstance.destroy();
-                      window.fullscreenChartInstance = null;
                     }
+                    window.fullscreenChartInstance = new Chart(ctx.getContext('2d'), JSON.parse(JSON.stringify(chartData[chartId])));
+                  }
+                }, 100);
+              }
+              
+              function closeChartFullscreen() {
+                var modal = document.getElementById('chart-fullscreen-modal');
+                if (modal) {
+                  modal.classList.remove('active');
+                  document.body.style.overflow = '';
+                  if (window.fullscreenChartInstance) {
+                    window.fullscreenChartInstance.destroy();
+                    window.fullscreenChartInstance = null;
                   }
                 }
-                
-                document.querySelectorAll('.chart-fullscreen-btn').forEach(function(btn) {
-                  btn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    var chartId = btn.getAttribute('data-chart');
-                    openChartFullscreen(chartId);
-                  });
+              }
+              
+              document.querySelectorAll('.chart-fullscreen-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  var chartId = btn.getAttribute('data-chart');
+                  openChartFullscreen(chartId);
                 });
-              })();
-            </script>
-          {% endif %}
-        </div>
-      </section>
-    </div>
+              });
+            })();
+          </script>
+        {% endif %}
+      </div>
+    </section>
+  </div>
 
   {% if results %}
     {% if results.error %}
@@ -382,12 +339,4 @@
     {% endif %}
   {% endif %}
 
-    <footer class="footer">
-      <div class="footer-content">
-        <p>Fotios Tsiadimos</p>
-        <p><a href="https://github.com/ftsiadimos/ollamaiq" target="_blank" rel="noopener noreferrer">View on GitHub</a></p>
-      </div>
-    </footer>
-  </div>
-</body>
-</html>
+{% endblock %}

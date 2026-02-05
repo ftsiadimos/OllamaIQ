@@ -2,4 +2,5 @@ ollama>=0.3.0
 Flask>=2.3.0
 jinja2>=3.1.0
 gunicorn>=20.1.0
+python-dotenv>=1.0.0
 # Add other dependencies your environment requires below
