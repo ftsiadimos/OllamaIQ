@@ -62,15 +62,26 @@
 ---
 
 ## 🚀 Quickstart — Docker (recommended)
-Run the official image exposing the default app port (9912):
+You can pull the officially released container from **Docker Hub** or the **GitHub Container Registry** (GHCR). Both images are built from the same codebase and kept in sync.
 
-#### Pull and run in one command
+#### Pull from Docker Hub and run in one command
 
 ```bash
+# Docker Hub (default)
 docker run -d \
   --name ollamaiq \
   -p 9912:9912 \
   ftsiadimos/ollamaiq
+```
+
+#### Or pull the same image from GHCR
+
+```bash
+# GitHub Container Registry
+docker run -d \
+  --name ollamaiq-ghcr \
+  -p 9912:9912 \
+  ghcr.io/ftsiadimos/ollamaiq
 ```
 
 Open http://localhost:9912
@@ -82,6 +93,7 @@ Or with Docker Compose (example):
 version: '3.8'
 services:
   ollamaiq:
+    # change to ghcr.io/ftsiadimos/ollamaiq if you prefer GHCR
     image: ftsiadimos/ollamaiq
     container_name: ollamaiq
     ports:
