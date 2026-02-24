@@ -252,7 +252,13 @@ def run_status(run_id):
 
 @app.route('/about')
 def about():
-    return render_template('about.html')
+    version = None
+    try:
+        with open(os.path.join(os.path.dirname(__file__), 'VERSION'), 'r', encoding='utf-8') as vf:
+            version = vf.read().strip()
+    except Exception:
+        version = 'unknown'
+    return render_template('about.html', version=version)
 
 
 @app.route('/delete_host', methods=['POST'])
