@@ -43,14 +43,6 @@
 
 ---
 
-## ✨ What's new
-- Redesigned UI with a warm, modern look and improved spacing for readability
-- Theme options: **Light**, **Dark**, and **Warm Dark** (switch in the header)
-- New **About** page describing the tests, developer, and tech stack
-- Cleaner footer and improved accessibility and responsiveness
-
----
-
 ## 🔧 Features
 - Discover models on an Ollama server (local or remote)
 - Auto-filter models containing `etch` (configurable)
