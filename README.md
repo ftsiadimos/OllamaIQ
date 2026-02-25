@@ -19,6 +19,8 @@
   <img src="https://img.shields.io/badge/license-GPL--3.0-orange.svg" alt="License GPL-3.0">
   <img src="https://img.shields.io/badge/SPDX-GPL--3.0--only-blue.svg" alt="SPDX GPL-3.0-only">
   <a href="https://hub.docker.com/r/ftsiadimos/ollamaiq"><img src="https://img.shields.io/docker/pulls/ftsiadimos/ollamaiq?style=flat-square&logo=docker" alt="Docker Pulls"></a>
+  <!-- GitHub Container Registry badge -->
+  <a href="https://github.com/users/ftsiadimos/packages/container/package/ollamaiq"><img src="https://img.shields.io/badge/ghcr.io-available-blue?style=flat-square&logo=github" alt="GHCR Available"></a>
 </p>
 
 
@@ -163,4 +165,3 @@ Contributions are welcome! Please open an issue or pull request. If you add test
 ## 📄 License
 GPL-3.0 — see the repository LICENSE file for details.  
 SPDX: `GPL-3.0-only`
-test
