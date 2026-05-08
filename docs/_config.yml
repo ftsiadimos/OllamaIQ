@@ -1,0 +1,15 @@
+title: Ollama Benchmark
+email: ""
+description: "Documentation for the OllamaIQ benchmark app"
+baseurl: ""
+url: ""
+theme: minima
+markdown: kramdown
+
+exclude:
+  - README.md
+  - LICENSE
+  - docker-compose.yml
+  - venv
+  - data.db
+  - latest_results.json
