@@ -53,6 +53,10 @@
 - Interactive web UI with charts, live progress, and saved run history
 - Save / download past runs (SQLite)
 
+## 📚 Documentation
+This repository now includes a `docs/` folder and a GitHub Pages workflow in `.github/workflows/pages.yml`.
+The documentation site can be published from the `docs/` directory using GitHub Pages.
+
 ---
 
 ## 🚀 Quickstart — Docker (recommended)
