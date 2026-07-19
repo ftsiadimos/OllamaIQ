@@ -164,10 +164,68 @@ def fetch():
     try:
         models_raw = client.list()
     except Exception as e:
-        return render_template('index.html', request=request, results={'host':chosen,'models_tested':[],'available_models':[],'timestamp':time.time(),'error':str(e)}, rows=[], fastest=None, best_code=None, best_smart=None, saved_hosts=db.list_hosts())
+        return render_template(
+            'index.html',
+            request=request,
+            results={
+                'host': chosen,
+                'models_tested': [],
+                'available_models': [],
+                'timestamp': time.time(),
+                'error': str(e)
+            },
+            rows=[],
+            fastest=None,
+            best_code=None,
+            best_smart=None,
+            saved_hosts=db.list_hosts()
+        )
 
-    results = {'host': chosen, 'models_tested': [], 'available_models': _normalize_models(models_raw), 'timestamp': time.time()}
-    return render_template('index.html', results=results, rows=[], fastest=None, best_code=None, best_smart=None, saved_hosts=get_saved_hosts())
+    # Normalized list of model names
+    model_names = _normalize_models(models_raw)
+
+    # Gather detailed info for each model (especially those containing 'etch')
+    model_details: Dict[str, Any] = {}
+    for name in model_names:
+        try:
+            # The Ollama client provides a `show` method to retrieve model details.
+            # If the method does not exist or fails, we fall back to an empty dict.
+            raw_details = getattr(client, 'show', lambda m: {})(name)
+        except Exception:
+            raw_details = {}
+
+        # Convert ShowResponse (or other pydantic models) to plain dicts for JSON serialization.
+        if hasattr(raw_details, "dict"):
+            try:
+                details = raw_details.dict()
+            except Exception:
+                details = {}
+        elif hasattr(raw_details, "model_dump"):
+            try:
+                details = raw_details.model_dump()
+            except Exception:
+                details = {}
+        else:
+            details = raw_details
+
+        model_details[name] = details
+
+    results = {
+        'host': chosen,
+        'models_tested': [],
+        'available_models': model_names,
+        'model_details': model_details,
+        'timestamp': time.time()
+    }
+    return render_template(
+        'index.html',
+        results=results,
+        rows=[],
+        fastest=None,
+        best_code=None,
+        best_smart=None,
+        saved_hosts=get_saved_hosts()
+    )
 
 
 @app.route('/start_run', methods=['POST'])
