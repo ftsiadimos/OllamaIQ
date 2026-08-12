@@ -619,6 +619,19 @@ button.secondary:hover {
   box-shadow: var(--shadow-sm);
 }
 
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+button:disabled:hover {
+  background: var(--accent);
+  transform: none;
+  box-shadow: none;
+}
+
 .form-actions {
   display: flex;
   gap: 10px;

@@ -6,7 +6,11 @@ import json
 import time
 import asyncio
 import sys
+import logging
+import re
+import io
 from typing import List, Optional, Dict, Any
+from urllib.parse import urlparse
 
 # make repo importable: ensure project root and cwd are on sys.path
 proj_root = os.path.abspath(os.path.dirname(__file__))
@@ -31,6 +35,15 @@ except Exception:
 
 # default host shown in the UI
 DEFAULT_HOST = os.environ.get('OLLAMA_DEFAULT_HOST', 'http://localhost:11434')
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger("ollamaiq")
 
 def get_saved_hosts():
     s = _unique(db.list_hosts())
@@ -59,6 +72,33 @@ def _unique(seq):
 # helper to call async run_manager functions from sync code
 def arun(coro):
     return asyncio.run(coro)
+
+# ---------------------------------------------------------------------------
+# Input validation
+# ---------------------------------------------------------------------------
+_HOST_RE = re.compile(r'^https?://[^\s/$.?#].[^\s]*$')
+
+def validate_host(host: str) -> Optional[str]:
+    """Return None if valid, else an error message."""
+    if not host or not host.strip():
+        return "Host URL is required."
+    host = host.strip()
+    if not _HOST_RE.match(host):
+        return "Invalid URL format. Use http:// or https://."
+    parsed = urlparse(host)
+    if not parsed.hostname:
+        return "Invalid hostname."
+    return None
+
+def validate_api_key(key: str) -> Optional[str]:
+    if key and len(key) > 1024:
+        return "API key too long."
+    return None
+
+def sanitize_string(s: str, default: str = "") -> str:
+    if not s:
+        return default
+    return s.strip()[:2048]
 
 
 def _get_client(host: str, api_key: Optional[str]) -> Client:
@@ -150,10 +190,16 @@ def index():
 
 @app.route('/fetch', methods=['POST'])
 def fetch():
-    chosen = request.form.get('host_new') or request.form.get('host') or ''
-    api_key = request.form.get('api_key')
-    if not chosen:
-        return render_template('index.html', request=request, results={'host':'','models_tested':[],'available_models':[],'timestamp':time.time(),'error':'No host provided'}, rows=[], fastest=None, best_code=None, best_smart=None, saved_hosts=db.list_hosts())
+    chosen = sanitize_string(request.form.get('host_new')) or sanitize_string(request.form.get('host')) or ''
+    api_key = request.form.get('api_key', '')
+
+    host_err = validate_host(chosen)
+    if host_err:
+        return render_template('index.html', request=request, results={'host':chosen,'models_tested':[],'available_models':[],'timestamp':time.time(),'error':host_err}, rows=[], fastest=None, best_code=None, best_smart=None, saved_hosts=db.list_hosts())
+
+    key_err = validate_api_key(api_key)
+    if key_err:
+        return render_template('index.html', request=request, results={'host':chosen,'models_tested':[],'available_models':[],'timestamp':time.time(),'error':key_err}, rows=[], fastest=None, best_code=None, best_smart=None, saved_hosts=db.list_hosts())
 
     try:
         db.add_host(chosen)
@@ -164,6 +210,7 @@ def fetch():
     try:
         models_raw = client.list()
     except Exception as e:
+        logger.warning("fetch failed for %s: %s", chosen, e)
         return render_template(
             'index.html',
             request=request,
@@ -366,10 +413,51 @@ def view_run(run_id):
     try:
         data = db.get_run(run_id)
     except Exception as e:
+        logger.error("view_run db error: %s", e)
         return render_template('index.html', results={'error': f'Database error: {e}'}, rows=[], fastest=None, best_code=None, best_smart=None, saved_hosts=get_saved_hosts())
     if not data:
         return render_template('history.html', runs=db.list_runs())
     return render_template('index.html', results=data, rows=[], fastest=None, best_code=None, best_smart=None, saved_hosts=get_saved_hosts())
+
+# ---------------------------------------------------------------------------
+# Health check
+# ---------------------------------------------------------------------------
+@app.route('/health')
+def health():
+    return jsonify({"status": "ok", "timestamp": time.time()})
+
+# ---------------------------------------------------------------------------
+# CSV export
+# ---------------------------------------------------------------------------
+@app.route('/export/<int:run_id>')
+def export_csv(run_id):
+    try:
+        data = db.get_run(run_id)
+    except Exception as e:
+        return jsonify({'error': f'Database error: {e}'}), 500
+    if not data:
+        abort(404)
+
+    models_tested = data.get('models_tested', []) or []
+    lines = ["Model,Smartness %,Code %,Mean(s),Median(s),Min(s),Max(s)"]
+    for m in models_tested:
+        ls = m.get('latency_stats', {}) or {}
+        smart = m.get('smartness_score', '')
+        code = m.get('code_score', '')
+        mean = ls.get('mean', '')
+        median = ls.get('median', '')
+        mn = ls.get('min', '')
+        mx = ls.get('max', '')
+        # Escape model name for CSV
+        model = m.get('model', '')
+        if ',' in model or '"' in model:
+            model = '"' + model.replace('"', '""') + '"'
+        lines.append(f"{model},{smart},{code},{mean},{median},{mn},{mx}")
+    csv_content = "\n".join(lines) + "\n"
+    response = app.make_response(csv_content)
+    response.headers.set('Content-Type', 'text/csv')
+    response.headers.set('Content-Disposition', 'attachment', filename=f'ollamaiq_run_{run_id}.csv')
+    return response
 
 
 if __name__ == '__main__':

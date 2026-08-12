@@ -11,8 +11,10 @@
     (function(){
       function hideAlert(){ var el = document.getElementById('global-alert'); if(!el) return; el.style.display='none'; el.innerHTML=''; el.classList.remove('alert-error','alert-info'); }
       function showError(msg){ var el = document.getElementById('global-alert'); if(!el) return; el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">' + '<div><strong>Error:</strong> ' + String(msg) + '</div>' + '<button class="chart-modal-close" onclick="hideAlert()" aria-label="close">✕</button>' + '</div>'; el.classList.add('alert-error'); el.style.display='block'; window.scrollTo({top:0,behavior:"smooth"}); }
+      function showInfo(msg){ var el = document.getElementById('global-alert'); if(!el) return; el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">' + '<div>' + String(msg) + '</div>' + '<button class="chart-modal-close" onclick="hideAlert()" aria-label="close">✕</button>' + '</div>'; el.classList.add('alert-info'); el.style.display='block'; window.scrollTo({top:0,behavior:"smooth"}); }
       window.showError = showError;
       window.hideAlert = hideAlert;
+      window.showInfo = showInfo;
     })();
   </script>
 

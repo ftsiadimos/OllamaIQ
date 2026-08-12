@@ -32,7 +32,7 @@
         {% endfor %}
       </div>
 
-      <button id="startRunBtn" type="submit">Run tests on selected models</button>
+      <button id="startRunBtn" type="submit" disabled aria-describedby="selectedCount">Run tests on selected models</button>
     </form>
   </div>
 
@@ -46,7 +46,9 @@
       function updateSelectedCount(){
         var count = document.querySelectorAll('.model-checkbox:checked').length;
         if (selectedCount) selectedCount.textContent = count + ' selected';
+        if (startBtn) startBtn.disabled = count === 0;
       }
+      var startBtn = document.getElementById('startRunBtn');
 
       if (selectAll) {
         selectAll.addEventListener('change', function(e){
@@ -96,7 +98,9 @@
         // show progress in dedicated area
         var progressArea = document.getElementById('progress-area');
         if (progressArea) {
-          progressArea.innerHTML = '<div id="run-progress" class="summary-card"><h4>Run started...</h4><div id="run-log" class="log"></div><div class="progress"><div id="run-bar" class="progress-bar" style="width:0%"></div></div></div>';
+          progressArea.innerHTML = '<div id="run-progress" class="summary-card" role="status" aria-live="polite"><h4>Run started...</h4><div id="run-log" class="log"></div><div class="progress"><div id="run-bar" class="progress-bar" style="width:0%"></div></div></div>';
+          // Scroll to progress area
+          progressArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else {
           var container = document.getElementById('run-progress') || document.createElement('div');
           container.id = 'run-progress';
