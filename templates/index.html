@@ -18,8 +18,7 @@
     })();
   </script>
 
-  <div class="grid">
-    <section class="panel controls">
+  <section class="panel controls panel-full" id="connection-panel">
       <div class="panel-header">
         <h3>Connection</h3>
         <span class="panel-hint">Choose a host and fetch models</span>
@@ -100,28 +99,18 @@
         <div class="panel model-details">
           <div class="panel-header">
             <h3>Model Details</h3>
-            <span class="panel-hint">Additional information for each model (e.g., size, parameters)</span>
+            <span class="panel-hint">Click a model to see full details</span>
           </div>
-          <div class="model-details-content" style="overflow:auto; max-height:300px;">
-            <table class="results-table">
-              <thead>
-                <tr><th>Model</th><th>Details (JSON)</th></tr>
-              </thead>
-              <tbody>
-                {% for name, info in results.model_details.items() %}
-                  <tr>
-                    <td>{{ name }}</td>
-                    <td><pre style="margin:0;">{{ info | tojson }}</pre></td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+          <div class="model-list" id="modelList">
+            {% for name in results.model_details.keys() %}
+              <button class="model-list-item" data-model="{{ name }}" type="button">{{ name }}</button>
+            {% endfor %}
           </div>
         </div>
       {% endif %}
     </section>
 
-    <section class="panel results-panel">
+    <section class="panel results-panel panel-full" id="results-panel">
       <div class="panel-header">
         <h3>Live Progress</h3>
         <span class="panel-hint">Run logs and charts render here</span>

@@ -410,26 +410,24 @@ a:hover {
 /* ===== Main Grid Layout ===== */
 .grid {
   display: grid;
-  /* flexible left column with an upper limit and the right column taking remaining space */
-  grid-template-columns: minmax(300px, 480px) 1fr;
+  grid-template-columns: 1fr;
   gap: 24px;
   flex: 1;
 }
 
-/* Medium screens: use a percentage-based left column for better distribution */
+/* Medium screens */
 @media (max-width: 1400px) and (min-width: 968px) {
   .grid {
-    grid-template-columns: minmax(280px, 40%) 1fr;
+    grid-template-columns: 1fr;
     gap: 18px;
   }
 }
 
-/* Large screens: use a 30% / 50% split for left/right columns and center the grid tracks */
+/* Large screens */
 @media (min-width: 1400px) {
   .grid {
-    grid-template-columns: 30% 50%;
+    grid-template-columns: 1fr;
     gap: 28px;
-    justify-content: center; /* centers the defined columns so they occupy ~80% of the container */
   }
 }
 
@@ -437,17 +435,13 @@ a:hover {
   .grid {
     grid-template-columns: 1fr;
   }
-  
-  .controls {
-    order: 1;
-  }
-  
-  .results-panel {
-    order: 2;
-  }
 } 
 
 /* ===== Panels / Cards ===== */
+.panel-full {
+  grid-column: 1 / -1;
+  width: 100%;
+}
 .panel {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -804,6 +798,150 @@ button:disabled:hover {
 
 .results-table tbody tr:last-child td {
   border-bottom: none;
+}
+
+/* ===== Model Details List & Modal ===== */
+.model-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.model-list-item {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.model-list-item:hover {
+  background: var(--accent-subtle);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-glow);
+  transform: translateY(-1px);
+}
+
+.model-list-item:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* Model Details Modal */
+.model-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+}
+
+.model-modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+}
+
+.model-modal-content {
+  position: relative;
+  width: 90%;
+  max-width: 800px;
+  max-height: 80vh;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.25s ease;
+  z-index: 1;
+}
+
+.model-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.model-modal-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  font-family: var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: calc(100% - 48px);
+}
+
+.model-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.model-modal-close:hover {
+  color: var(--error);
+  background: var(--error-subtle);
+  border-color: transparent;
+}
+
+.model-modal-body {
+  flex: 1;
+  padding: 20px 24px;
+  overflow: auto;
+  min-height: 100px;
+}
+
+.model-modal-json {
+  margin: 0;
+  padding: 16px;
+  font-size: 0.82rem;
+  font-family: var(--font-mono);
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* ===== Summary Cards ===== */
